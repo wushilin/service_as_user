@@ -15,10 +15,12 @@ debug=0
 service.list=blah
 
 # Service for blah
-# If blah is not running, run this script to start the service
+# If blah is not running, service_as_user will run this script to start the service
 service.blah.execStart=/home/wushilin/bin/test1/start.sh
 
 # Run this script to detect if blah is running (should output PIDs detected)
+# If detected that the service is running (possibly by ps, or telnet), output the PIDs (or any number!)
+# If detected that the service is not running, output nothing
 service.blah.detectPid=/home/wushilin/bin/test1/detect.sh
 ```
 ## Enable in cron
