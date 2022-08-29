@@ -1,0 +1,128 @@
+#!/usr/bin/env perl
+
+use Data::Dumper;
+
+my $props = &read_props;
+my $debug = $props->{debug};
+&debug("Starting.");
+&debug("Service Properties: " . Dumper($props));
+my @service_list = split(/,/, $props->{"service.list"});
+foreach my $service(@service_list) {
+	&check($service, &subtree($props, "service." . $service . "."));
+}
+
+&debug("Done(main exit)!");
+sub check($$) {
+	my $service_name = shift;
+	&debug("Checking service: $service_name");
+	my $props = shift;
+	my $start = $props->{execStart};
+	my $detect = $props->{detectPid};
+	&require($service_name, "detectPid", $detect, "execStart", $start);
+	my @detect_pid_raw = `$detect`;
+	if(@detect_pid_raw == 1) {
+		@detect_pid_raw = split(/\n/, $detect_pid_raw[0]);
+	}
+	my $count = 0;
+	while(@detect_pid_raw > 0 and $detect_pid_raw[@detect_pid_raw - 1] eq "") {
+		pop @detect_pid_raw;
+		$count = $count + 1;
+		if( $count > 1000) {
+			last;
+		}
+	}
+	&debug("Detect PID Output: \n" . join(",,,,,\n", @detect_pid_raw));
+
+	if(@detect_pid_raw > 0) {
+		# process is running
+		&debug("Process is already running.");
+	} else {
+		&log("Starting $service_name");
+		&start($service_name, $start);
+	}
+}
+
+sub start($$) {
+	my $service_name = shift;
+	my $arg = shift;
+	$arg = &trim($arg);
+	if(fork()) {
+		# parent process
+		return;
+	}
+	# Child process
+	if(not $arg =~ m/\&$/) {
+		$arg = $arg . "&";
+	}
+
+	&debug($arg);
+	system($arg);
+	&debug("Child exit");
+	exit 0;
+}
+
+sub log {
+  print (scalar localtime() . " - INFO: @_\n");
+}
+
+sub logerr {
+  print STDERR (scalar localtime() . " - ERROR: @_\n");
+}
+
+sub debug {
+  if ($debug) {
+    print (scalar localtime() . " - DEBUG: @_\n");
+  }
+}
+
+sub require {
+	my $service_name = shift;
+	my @args = @_;
+	for(my $i = 0; $i < @args; $i = $i + 2) {
+		my $key = $args[$i];
+		my $value = $args[$i + 1];
+		if((not defined($value)) or $value eq "") {
+			die "Service $service_name: Required $key not defined!";
+		}
+	}
+}
+
+sub read_props() {
+	open FH, "<$ENV{HOME}/.service_config" or die "Can't read $ENV{HOME}/.service_config";
+	my @lines = <FH>;
+	my $result = {};
+	foreach my $line(@lines) {
+		chomp $line;
+		$line = &trim($line);
+		next if $line =~ m/^#/;
+		my $idx = index($line, "=");
+		next if not $idx > 0;
+		my $key = &trim(substr($line, 0, $idx));
+		my $value = &trim(substr($line, $idx + 1));
+		$result->{$key} = $value;
+	}
+	close FH;
+	return $result;
+}
+
+
+sub trim($) {
+	my $line= shift;
+	$line =~ s/^\s+//g;
+        $line =~ s/\s+$//g;
+	return $line;
+}
+
+sub subtree($$) {
+	my $p = shift;
+	my $prefix = shift;
+	my $result = {};
+	foreach my $key(keys %$p) {
+		my $value = $p->{$key};
+		if($key =~ m/^$prefix/) {
+			my $new_key = substr($key, length($prefix));
+			$result->{$new_key} = $value;
+		}
+	}
+	return $result;
+}
