@@ -34,5 +34,10 @@ Everytime the service script is running, it will check if the services are runni
 If a service is not running, then execStart is executed to start the service.
 
 # Example
-see `examples/test1/detect.sh` and `examples/test1/start.sh`
+see `example/test1/detect.sh` and `example/test1/start.sh`
 
+They are simple script that demonstrates:
+`start.sh` -> start a service that sleeps for 75 seconds
+`detect.sh` -> detect if a sleep service is already running by using PS.
+
+So every 2 minutes a new sleep service will be launched by `start.sh` as `detect.sh` will return false after 75 seconds.
