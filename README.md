@@ -33,3 +33,6 @@ Everytime the service script is running, it will check if the services are runni
 
 If a service is not running, then execStart is executed to start the service.
 
+# Example
+see `examples/test1/detect.sh` and `examples/test1/start.sh`
+
